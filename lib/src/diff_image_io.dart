@@ -24,7 +24,7 @@ class DiffImage{
   }
 
   ///Returns a single number representing the average difference between each pixel
-  static Future<num> compareFromUrl(
+  static Future<dynamic> compareFromUrl(
       firstImgSrc, secondImgSrc,
       {ignoreAlpha=true, asPercentage=true, saveDiff=false, returnDiffImage=false}
   ) async {
@@ -40,25 +40,27 @@ class DiffImage{
     }
 
 
-    return _getImagesDiff(
+    final diff = await _getImagesDiff(
       firstImg, secondImg,
       ignoreAlpha: ignoreAlpha,
       asPercentage: asPercentage,
       saveDiff: saveDiff,
       returnDiffImage: returnDiffImage
     );
+
+    return diff;
   }
 
   // Returns a single number representing the average difference between each pixel
-  static Future<num> compareFromFiles(
-      firstFile, secondFile,
-      {ignoreAlpha=true, asPercentage=true, saveDiff=false, returnDiffImage=false}
+  static Future<dynamic> compareFromFiles(
+      io.File firstFile, io.File secondFile,
+      {ignoreAlpha=true, asPercentage=true, saveDiff=false, returnDiffImage=true}
   ) async {
 
-    var firstImg = await Image.file(firstFile);
+    var firstImg = decodeImage(await firstFile.readAsBytes());
     if( firstImg is Exception ) throw firstImg;
 
-    var secondImg = await Image.file(secondFile);
+    var secondImg = decodeImage(await secondFile.readAsBytes());
     if( secondImg is Exception ) throw secondImg;
 
     if( !haveSameSize(firstImg, secondImg) ){
@@ -66,19 +68,21 @@ class DiffImage{
     }
 
 
-    return _getImagesDiff(
-      firstImg, secondImg,
-      ignoreAlpha: ignoreAlpha,
-      asPercentage: asPercentage,
-      saveDiff: saveDiff,
-      returnDiffImage: returnDiffImage
+    final diff = await _getImagesDiff(
+        firstImg, secondImg,
+        ignoreAlpha: ignoreAlpha,
+        asPercentage: asPercentage,
+        saveDiff: saveDiff,
+        returnDiffImage: returnDiffImage
     );
+
+    return diff;
   }
 
-  num _getImagesDiff(
+  static Future<dynamic> _getImagesDiff(
     Image firstImage, Image secondImage,
     {bool ignoreAlpha, bool asPercentage, bool saveDiff, bool returnDiffImage}
-  ) {
+  ) async {
     var width = firstImage.width; var height = firstImage.height;
     var diff = 0.0;
 
@@ -108,7 +112,7 @@ class DiffImage{
     }
 
     if( returnDiffImage ) {
-      return Image.memory(encodePng(diffImg));
+      return encodePng(diffImg);
     } else {
       return diff;
     }
