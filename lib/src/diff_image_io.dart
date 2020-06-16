@@ -26,8 +26,8 @@ class DiffImage{
   ///Returns a single number representing the average difference between each pixel
   static Future<num> compareFromUrl(
       firstImgSrc, secondImgSrc,
-      {ignoreAlpha=true, asPercentage=true, saveDiff=false}
-  ) async{
+      {ignoreAlpha=true, asPercentage=true, saveDiff=false, returnDiffImage=false}
+  ) async {
 
     var firstImg = await getImg(firstImgSrc);
     if( firstImg is Exception ) throw firstImg;
@@ -40,7 +40,46 @@ class DiffImage{
     }
 
 
-    var width = firstImg.width; var height = firstImg.height;
+    return _getImagesDiff(
+      firstImg, secondImg,
+      ignoreAlpha: ignoreAlpha,
+      asPercentage: asPercentage,
+      saveDiff: saveDiff,
+      returnDiffImage: returnDiffImage
+    );
+  }
+
+  // Returns a single number representing the average difference between each pixel
+  static Future<num> compareFromFiles(
+      firstFile, secondFile,
+      {ignoreAlpha=true, asPercentage=true, saveDiff=false, returnDiffImage=false}
+  ) async {
+
+    var firstImg = await Image.file(firstFile);
+    if( firstImg is Exception ) throw firstImg;
+
+    var secondImg = await Image.file(secondFile);
+    if( secondImg is Exception ) throw secondImg;
+
+    if( !haveSameSize(firstImg, secondImg) ){
+      throw UnsupportedError('Currently we need images of same width and height');
+    }
+
+
+    return _getImagesDiff(
+      firstImg, secondImg,
+      ignoreAlpha: ignoreAlpha,
+      asPercentage: asPercentage,
+      saveDiff: saveDiff,
+      returnDiffImage: returnDiffImage
+    );
+  }
+
+  num _getImagesDiff(
+    Image firstImage, Image secondImage,
+    {bool ignoreAlpha, bool asPercentage, bool saveDiff, bool returnDiffImage}
+  ) {
+    var width = firstImage.width; var height = firstImage.height;
     var diff = 0.0;
 
     //Create an image to show the differences
@@ -49,8 +88,8 @@ class DiffImage{
     for(var i=0; i<width; i++){
       var diffAtPixel, firstPixel, secondPixel;
       for(var j=0; j<height; j++){
-        firstPixel = firstImg.getPixel(i, j);
-        secondPixel = secondImg.getPixel(i, j);
+        firstPixel = firstImage.getPixel(i, j);
+        secondPixel = secondImage.getPixel(i, j);
 
         diffAtPixel = _diffBetweenPixels(firstPixel, secondPixel, ignoreAlpha);
         diff += diffAtPixel;
@@ -68,7 +107,12 @@ class DiffImage{
       await io.File('DiffImg.png').writeAsBytes(encodePng(diffImg));
     }
 
-    return diff;
+    if( returnDiffImage ) {
+      return Image.memory(encodePng(diffImg));
+    } else {
+      return diff;
+    }
+
   }
 
 }
